@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,6 +16,28 @@ namespace WondyBotAPI.Models
         public double CurrentPrice { get; set; }
         public double TargetPrice { get; set; }
         public dynamic Recommend { get; set; }
+
+        public CompanyDetail(string profilePayload, string quotePayload, string targetPricePayload, string reccomendationPayload)
+        {
+            dynamic d = JsonConvert.DeserializeObject(profilePayload);
+            this.Name = d.name;
+            this.Ticker = d.ticker;
+            this.Currency = d.currency;
+            if (d.finnhubIndustry != "")
+            {
+                this.Industry = d.finnhubIndustry;
+            }
+            this.Exchange = d.exchange;
+
+            dynamic q = JsonConvert.DeserializeObject(quotePayload);
+            this.CurrentPrice = q.c;
+
+            dynamic t = JsonConvert.DeserializeObject(targetPricePayload);
+            this.TargetPrice = t.targetMean;
+
+            var r = JsonConvert.DeserializeObject<IEnumerable<dynamic>>(reccomendationPayload);
+            this.Recommend = r.FirstOrDefault();
+        }
 
         public override string ToString()
         {

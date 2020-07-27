@@ -37,7 +37,7 @@ namespace WondyBotAPI.Controllers
         }
 
         [HttpGet("ticker")]
-        public async Task<ActionResult<CompanyDetail>> GetCompanyDetail(string ticker)
+        public async Task<ActionResult<string>> GetCompanyDetail(string ticker)
         {
             //returns company details based on ticker input
             var companyDetails = await _supervisor.GetCompanyDetails(ticker);

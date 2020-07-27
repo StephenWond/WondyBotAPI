@@ -13,17 +13,17 @@ namespace WondyBotAPI.Supervisors
     public class CompanySupervisor
     {
         private readonly IMemoryCache _cache;
-        private readonly IConfiguration _config;
         private readonly FinnhubHelper _helper;
+        private readonly IConfiguration _config;
 
         private readonly string _domain;
         private readonly string _apiToken;
 
-        public CompanySupervisor(IMemoryCache memoryCache, IConfiguration config, FinnhubHelper helper)
+        public CompanySupervisor(IMemoryCache memoryCache, FinnhubHelper helper, IConfiguration config)
         {
             _cache = memoryCache;
-            _config = config;
             _helper = helper;
+            _config = config;
 
             _domain = _config["Finnhub:apiEndpoint"];
             _apiToken = _config["Finnhub:apiToken"];
@@ -51,22 +51,56 @@ namespace WondyBotAPI.Supervisors
             return matches;
         }
 
-        internal Task GetCompanyDetails(string ticker)
-        {
-            throw new NotImplementedException();
-        }
-
         private async Task<IEnumerable<Symbol>> GetSymbolsFromCache()
         {
             var cacheSymbols = _cache.Get<IEnumerable<Symbol>>("cacheSymbols");
 
             if (cacheSymbols == null)
             {
-                cacheSymbols = await _helper.GetLatestSymbolsFromEndpoint(_domain, _apiToken);
+                cacheSymbols = await GetLatestSymbolsFromEndpoint();
                 _cache.Set("cacheSymbols", cacheSymbols, TimeSpan.FromDays(1));
             }
 
             return cacheSymbols;
+        }
+
+        public async Task<IEnumerable<Symbol>> GetLatestSymbolsFromEndpoint()
+        {
+            var arrayOfExchanges = _config.GetSection("Finnhub:exchangeArray").Get<string[]>();
+
+            var taskList = new List<Task<IEnumerable<Symbol>>>();
+
+            foreach (var exchange in arrayOfExchanges)
+            {
+                taskList.Add(_helper.GetSymbolList($"{_domain}stock/symbol?exchange={exchange}&token={_apiToken}"));
+            }
+
+            await Task.WhenAll(taskList);
+
+
+            var companyList = new List<Symbol>();
+
+            foreach(var t in taskList)
+            {
+                var symbols = await t;
+                companyList.AddRange(symbols);
+            }
+
+            return companyList;
+        }
+
+
+        internal async Task<string> GetCompanyDetails(string ticker)
+        {
+            var profilePayload = _helper.GetCompanyData($"{_domain}stock/profile2?symbol={ticker}&token={_apiToken}");
+            var quotePayload = _helper.GetCompanyData($"{_domain}quote?symbol={ticker}&token={_apiToken}");
+            var targetPricePayload = _helper.GetCompanyData($"{_domain}stock/price-target?symbol={ticker}&token={_apiToken}");
+            var reccomendationPayload = _helper.GetCompanyData($"{_domain}stock/recommendation?symbol={ticker}&token={_apiToken}");
+
+            await Task.WhenAll(profilePayload, quotePayload, targetPricePayload, reccomendationPayload);
+
+            var companyDetail = new CompanyDetail(await profilePayload, await quotePayload, await targetPricePayload, await reccomendationPayload);
+            return companyDetail.ToString();
         }
     }
 }

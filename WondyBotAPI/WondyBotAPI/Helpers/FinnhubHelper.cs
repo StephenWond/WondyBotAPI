@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,28 +18,21 @@ namespace WondyBotAPI.Helpers
             _httpClient = httpClient;
         }
 
-        public async Task<IEnumerable<Symbol>> GetLatestSymbolsFromEndpoint(string domain, string apiToken)
+        public async Task<IEnumerable<Symbol>> GetSymbolList(string url)
         {
-            var usSymbols = GetLastestExchangeSymbols(domain, "US", apiToken);
-            var ukSymbols = GetLastestExchangeSymbols(domain, "L", apiToken);
-            var chinaSymbols = GetLastestExchangeSymbols(domain, "T", apiToken);
-
-            await Task.WhenAll(usSymbols, ukSymbols, chinaSymbols);
-
-            var companyList = new List<Symbol>();
-            companyList.AddRange(await usSymbols);
-            companyList.AddRange(await ukSymbols);
-            companyList.AddRange(await chinaSymbols);
-
-            return companyList;
-        }
-
-        private async Task<IEnumerable<Symbol>> GetLastestExchangeSymbols(string domain, string exchange, string apiToken)
-        {
-            var symbolPayload = await _httpClient.GetAsync($"{domain}stock/symbol?exchange={exchange}&token={apiToken}");
+            var symbolPayload = await _httpClient.GetAsync(url);
 
             var listPayload = JsonConvert.DeserializeObject<IEnumerable<Symbol>>(await symbolPayload.Content.ReadAsStringAsync());
             return listPayload;
+        }
+
+        public async Task<string> GetCompanyData(string url)
+        {
+            var symbolPayload = await _httpClient.GetAsync(url);
+            var content = await symbolPayload.Content.ReadAsStringAsync();
+            return content;
+            //var listPayload = JsonConvert.DeserializeObject<dynamic>(content);
+            //return listPayload;
         }
     }
 }
