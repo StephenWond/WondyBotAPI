@@ -8,18 +8,18 @@ phases:
   pre_build:
     commands:
       - echo Restore started on `date`
-      - dotnet restore WondyBotAPI.csproj
+      - dotnet restore WondybotAPI/WondyBotAPI.csproj
 
   build:
     commands:
       - echo Build started on `date`
-      - dotnet build WondyBotAPI.csproj
+      - dotnet build WondybotAPI/WondyBotAPI.csproj
 
   post_build:
     commands:
       - echo Publish started on `date`
       # https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/dotnet-linux-platform-bundle-app.html
-      - dotnet publish -c Release -r linux-x64 --self-contained false WondyBotAPI.csproj
+      - dotnet publish -c Release -r linux-x64 --self-contained false WondybotAPI/WondyBotAPI.csproj
 
 artifacts:
   files:
